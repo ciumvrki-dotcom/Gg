@@ -1,0 +1,697 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Pumpkin</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: one narrow column of market cards; coin page = chart + trade ticket + live feed of who bought. */
+:root{
+  --bg:#0d1310; --surface:#141c17; --surface2:#1b261f; --line:#24332a;
+  --fg:#e7efe9; --muted:#8c9f93; --accent:#58e283; --on-accent:#04130a;
+  --up:#3fd883; --down:#ff6b68;
+  --font-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-display:"Space Grotesk","Inter",system-ui,sans-serif;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f2f6f3; --surface:#ffffff; --surface2:#e9f0eb; --line:#d4dfd7;
+    --fg:#0e1a13; --muted:#587062; --accent:#15a64b; --on-accent:#ffffff;
+    --up:#11924a; --down:#d63a38; color-scheme:light;
+  }
+}
+:root[data-theme="light"]{
+  --bg:#f2f6f3; --surface:#ffffff; --surface2:#e9f0eb; --line:#d4dfd7;
+  --fg:#0e1a13; --muted:#587062; --accent:#15a64b; --on-accent:#ffffff;
+  --up:#11924a; --down:#d63a38; color-scheme:light;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:14px;line-height:1.5;font-variant-numeric:tabular-nums;
+  padding-block:0 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+a{color:inherit;text-decoration:none}
+h1,h2,h3{font-family:var(--font-display);margin:0;text-wrap:balance;line-height:1.2}
+h1{font-size:26px} h2{font-size:16px}
+p{margin:0}
+.wrap{max-width:1120px;margin:0 auto}
+.muted{color:var(--muted)} .small{font-size:12.5px} .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+.up{color:var(--up)} .down{color:var(--down)}
+button,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:14px 0;border-bottom:1px solid var(--line)}
+.logo{display:flex;align-items:center;gap:8px;font-family:var(--font-display);font-weight:700;font-size:20px}
+.logo-mark{width:22px;height:22px;border-radius:50%;background:var(--accent);position:relative;display:inline-block}
+.logo-mark::after{content:"";position:absolute;left:9px;top:-4px;width:4px;height:7px;border-radius:2px;background:var(--accent)}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav a{padding:6px 10px;border-radius:8px;color:var(--muted);font-weight:500}
+nav a.on{background:var(--surface2);color:var(--fg)}
+.live{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12.5px;margin-left:auto;cursor:pointer}
+.chip-wallet{background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-weight:600;font-size:13px}
+.chip-wallet.cta{background:var(--accent);color:var(--on-accent);border-color:transparent}
+.demo-note{font-size:12.5px;color:var(--muted);padding:10px 0 0}
+main{padding-top:18px}
+footer{margin-top:36px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:14px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--accent);color:var(--on-accent);border:0;border-radius:10px;padding:10px 16px;font-weight:600;cursor:pointer}
+.btn.ghost{background:var(--surface2);color:var(--fg);border:1px solid var(--line)}
+.btn.sell{background:var(--down);color:#fff}
+.btn.block{width:100%}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+
+.intro{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:center;justify-content:space-between;margin-bottom:16px}
+.intro p{max-width:56ch;margin-top:6px}
+.strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px}
+.strip .chip{flex:none;display:flex;gap:6px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12.5px;white-space:nowrap}
+.strip .chip i{width:8px;height:8px;border-radius:50%;background:var(--up);display:inline-block}
+.strip .chip.sell i{background:var(--down)}
+.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.tabs button{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:6px 14px;cursor:pointer;font-weight:500}
+.tabs button.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
+.card{display:flex;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}
+.card:hover{border-color:var(--accent)}
+.cbody{min-width:0;flex:1;display:flex;flex-direction:column;gap:6px}
+.ctop{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.tick{color:var(--muted);font-weight:500;font-size:.8em}
+.clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cmeta{display:flex;justify-content:space-between;gap:8px}
+.cfoot{display:flex;gap:12px;flex-wrap:wrap}
+.bar{height:6px;border-radius:99px;background:var(--surface2);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.av{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:24px;background:hsl(var(--h) 45% 30%);flex:none}
+.av.lg{width:68px;height:68px;font-size:34px}
+.badge,.tag{display:inline-block;font-size:11px;font-weight:600;padding:1px 7px;border-radius:99px;background:var(--surface2);color:var(--muted);margin-left:6px;vertical-align:middle}
+.badge.ok{background:var(--accent);color:var(--on-accent)}
+
+.back{display:inline-block;color:var(--muted);margin-bottom:12px}
+.coin-head{display:flex;gap:14px;align-items:center;margin-bottom:10px}
+.desc{margin-bottom:16px;max-width:70ch;color:var(--muted)}
+.coin-grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr);grid-template-areas:"main" "trade" "curve" "trades" "holders";align-items:start}
+.coin-grid>*{min-width:0}
+.a-main{grid-area:main}.a-trade{grid-area:trade}.a-curve{grid-area:curve}.a-trades{grid-area:trades}.a-holders{grid-area:holders}
+@media (min-width:900px){
+  .coin-grid{grid-template-columns:minmax(0,1fr) 340px;grid-template-areas:"main trade" "curve holders" "trades holders"}
+}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+.ph{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:12px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:12px;margin-bottom:14px}
+.stats .k{color:var(--muted);font-size:12px}
+.stats .v{font-family:var(--font-display);font-weight:700;font-size:18px}
+.chart svg{display:block;width:100%;height:auto;max-width:100%}
+.chart .line{fill:none;stroke:var(--c);stroke-width:2;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.chart .area{fill:var(--c);fill-opacity:.12;stroke:none}
+.chart .dot{fill:var(--c);stroke:none}
+.chart .grid line{stroke:var(--line);stroke-width:1;vector-effect:non-scaling-stroke}
+.chart svg.up{--c:var(--up)}.chart svg.down{--c:var(--down)}
+.chart-note{margin-top:6px}
+.scroll{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;min-width:420px}
+.tbl th{text-align:left;font-weight:500;color:var(--muted);font-size:12px;padding:6px 8px;border-bottom:1px solid var(--line)}
+.tbl td{padding:8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td.num,.tbl th.num{text-align:right}
+.tbl tr:last-child td{border-bottom:0}
+.tbl tr.fresh td{animation:flash 1.4s ease-out}
+@keyframes flash{from{background:color-mix(in srgb,var(--accent) 25%,transparent)}to{background:transparent}}
+@media (prefers-reduced-motion:reduce){.tbl tr.fresh td{animation:none}}
+
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.seg button{border:1px solid var(--line);background:var(--surface2);border-radius:10px;padding:9px;font-weight:600;cursor:pointer;color:var(--muted)}
+.seg button.on.buy{background:var(--up);color:#04130a;border-color:transparent}
+.seg button.on.sell{background:var(--down);color:#fff;border-color:transparent}
+.lbl{display:block;font-size:12.5px;color:var(--muted);margin:10px 0 4px}
+input[type=text],input[type=number],textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+textarea{resize:vertical;min-height:80px}
+.quick{display:flex;gap:6px;margin:8px 0;flex-wrap:wrap}
+.quick button{flex:1;min-width:52px;background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:6px;cursor:pointer}
+.preview{min-height:64px;margin:6px 0 12px;display:grid;gap:2px}
+.preview div{display:flex;justify-content:space-between;gap:8px}
+.hold{display:grid;gap:10px}
+.hrow{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:8px;align-items:center}
+.hrow .hb{grid-column:2/4;height:4px;border-radius:99px;background:var(--surface2);overflow:hidden}
+.hrow .hb i{display:block;height:100%;background:var(--accent)}
+.notice{background:var(--surface2);border-radius:10px;padding:10px 12px}
+.pick{display:flex;flex-wrap:wrap;gap:6px}
+.pick button{width:42px;height:42px;border-radius:10px;border:2px solid var(--line);background:var(--surface2);font-size:20px;cursor:pointer}
+.pick button.on{border-color:var(--accent)}
+.pick.hues button{border-radius:50%;background:hsl(var(--h) 45% 32%);font-size:0}
+.form{max-width:560px;display:grid;gap:4px}
+.cards{display:grid;gap:14px}
+.row2{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.walletcard{display:grid;gap:8px}
+.addr{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.addr code{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:4px 8px;word-break:break-all;font-size:12px}
+.bignum{font-family:var(--font-display);font-size:34px;font-weight:700}
+#toasts{position:fixed;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));display:grid;gap:8px;justify-items:center;pointer-events:none;z-index:20}
+.toast{background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:500;max-width:100%}
+.toast.err{background:var(--down);color:#fff}
+</style>
+
+<div class="wrap">
+  <header>
+    <a class="logo" href="#market"><span class="logo-mark" aria-hidden="true"></span>Pumpkin</a>
+    <nav aria-label="Разделы">
+      <a href="#market" data-nav="market">Рынок</a>
+      <a href="#create" data-nav="create">Создать монету</a>
+      <a href="#wallet" data-nav="wallet">Кошелёк</a>
+    </nav>
+    <label class="live"><input type="checkbox" id="botsOn" checked> Живой рынок</label>
+    <a id="walletChip" class="chip-wallet" href="#wallet"></a>
+  </header>
+  <div class="demo-note">Демо-режим: SOL, кошельки и покупатели виртуальные. Цена считается по бондинг-кривой, как на pump.fun.</div>
+  <main id="app"></main>
+  <footer>Реальные деньги и блокчейн не используются. Данные хранятся только в вашем браузере.</footer>
+</div>
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+var KEY='pumpkin-v1';
+var SUPPLY=1e9,V_SOL0=30,V_TOK0=1073e6,REAL_TOK0=793.1e6,GRAD_SOL=85,FEE=0.01,USD=150;
+var EMOJIS=['🐸','🐱','🐶','🚀','🍌','🥟','🍵','👽','🔥','💎','🦄','🐻'];
+var HUES=[150,200,260,310,10,40,90,180];
+var NICKS=['kitsune','0xmoss','satoshi_cat','nightowl','paperhands','diamondfox','lamb0','whale_ish','degen42','mintqueen','rugsurvivor','bagholder','solfan','ape_in','tinyfish','coldwallet'];
+var B58='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+var SUB='₀₁₂₃₄₅₆₇₈₉';
+var state=null,view='market',currentCoinId=null,sortMode='hot',mode='buy',lastT=0,lastGrad=false;
+var app=document.getElementById('app');
+function $(s){return document.querySelector(s);}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function rnd(a,b){return a+Math.random()*(b-a);}
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+function genAddr(){var s='';for(var i=0;i<44;i++)s+=B58[Math.floor(Math.random()*B58.length)];return s;}
+function short(a){return a.slice(0,4)+'…'+a.slice(-4);}
+
+/* ---------- formatting ---------- */
+function fmtSol(n){n=Math.abs(n)<1e-12?0:n;return n>=1000?n.toFixed(0):n>=1?n.toFixed(2):n.toFixed(4);}
+function fmtTok(n){if(n>=1e9)return (n/1e9).toFixed(2)+'B';if(n>=1e6)return (n/1e6).toFixed(2)+'M';if(n>=1e3)return (n/1e3).toFixed(1)+'K';return n.toFixed(1);}
+function fmtUsd(n){if(n>=1e6)return (n/1e6).toFixed(2)+'M';if(n>=1e3)return (n/1e3).toFixed(1)+'K';return n.toFixed(0);}
+function fmtPrice(p){
+  if(p>=0.001)return p.toFixed(6).replace(/0+$/,'');
+  var e=p.toExponential(2).split('e');var zeros=-parseInt(e[1],10)-1;var digits=e[0].replace('.','');
+  var sub=String(zeros).split('').map(function(d){return SUB[+d];}).join('');
+  return '0.0'+sub+digits;
+}
+function pct(x){return (x>=0?'+':'')+(x*100).toFixed(1)+'%';}
+function ago(ts){var s=Math.max(0,Math.floor((Date.now()-ts)/1000));if(s<60)return s+' с';if(s<3600)return Math.floor(s/60)+' мин';if(s<86400)return Math.floor(s/3600)+' ч';return Math.floor(s/86400)+' д';}
+
+/* ---------- state ---------- */
+function load(){try{var s=localStorage.getItem(KEY);if(s){var o=JSON.parse(s);if(o&&o.tokens&&o.bots)return o;}}catch(e){}return null;}
+var saveT=null;
+function save(){if(MP.on)return;clearTimeout(saveT);saveT=setTimeout(function(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}},600);}
+function getTok(id){for(var i=0;i<state.tokens.length;i++)if(state.tokens[i].id===id)return state.tokens[i];return null;}
+function tok(){return getTok(currentCoinId);}
+function price(t){return t.vS/t.vT;}
+function mcSol(t){return price(t)*SUPPLY;}
+function nameOf(addr){if(MP.on&&MP.users[addr])return MP.users[addr].name;
+  if(state.me&&state.me.addr===addr)return state.me.name;
+  for(var i=0;i<state.bots.length;i++)if(state.bots[i].addr===addr)return state.bots[i].name;
+  return short(addr);
+}
+function isMe(addr){return !!state.me&&state.me.addr===addr;}
+function whoHtml(addr,creator){
+  var me=isMe(addr);
+  return '<span>'+esc(nameOf(addr))+(me?'<span class="tag">вы</span>':'')+(creator===addr?'<span class="tag">создатель</span>':'')+'</span> <span class="muted mono">'+short(addr)+'</span>';
+}
+
+/* ---------- bonding curve ---------- */
+function mkToken(o){
+  return {id:Math.random().toString(36).slice(2,8),name:o.name,ticker:o.ticker,desc:o.desc,emoji:o.emoji,hue:o.hue,creator:o.creator,createdAt:o.t,
+    vS:V_SOL0,vT:V_TOK0,k:V_SOL0*V_TOK0,realSol:0,realTok:REAL_TOK0,price0:V_SOL0/V_TOK0,graduated:false,holders:{},trades:[]};
+}
+function calcBuy(t,solIn){
+  var net0=solIn*(1-FEE),nvS=t.vS+net0,out=t.vT-t.k/nvS,net=net0;
+  if(out>t.realTok){out=t.realTok;nvS=t.k/(t.vT-out);net=nvS-t.vS;}
+  var spent=net/(1-FEE);
+  return {out:out,net:net,spent:spent,fee:spent*FEE,nvS:nvS,nvT:t.vT-out};
+}
+function calcSell(t,tokIn){
+  var nvT=t.vT+tokIn,nvS=t.k/nvT,gross=t.vS-nvS;
+  return {gross:gross,out:gross*(1-FEE),fee:gross*FEE,nvS:nvS,nvT:nvT};
+}
+function record(t,type,addr,sol,tk,when){
+  t.trades.unshift({t:when||Date.now(),type:type,addr:addr,sol:sol,tok:tk,price:t.vS/t.vT});
+  if(t.trades.length>300)t.trades.pop();
+}
+function applyBuy(t,addr,solIn,when){
+  if(t.graduated)return null;
+  var c=calcBuy(t,solIn);
+  t.vS=c.nvS;t.vT=c.nvT;t.realTok-=c.out;t.realSol+=c.net;
+  t.holders[addr]=(t.holders[addr]||0)+c.out;
+  if(t.realTok<1)t.graduated=true;
+  record(t,'buy',addr,c.spent,c.out,when);
+  return c;
+}
+function applySell(t,addr,tokIn,when){
+  if(t.graduated)return null;
+  var c=calcSell(t,tokIn);
+  t.vS=c.nvS;t.vT=c.nvT;t.realTok+=tokIn;t.realSol-=c.gross;
+  t.holders[addr]=(t.holders[addr]||0)-tokIn;
+  if(t.holders[addr]<1e-6)delete t.holders[addr];
+  record(t,'sell',addr,c.out,tokIn,when);
+  return c;
+}
+
+/* ---------- seed ---------- */
+function seed(){
+  var bots=NICKS.map(function(n){return {addr:genAddr(),name:n};});
+  var st={me:null,bots:bots,tokens:[],botsOn:true};
+  var now=Date.now();
+  var specs=[
+    {name:'Пельмень Коин',ticker:'PEL',desc:'Горячий, мягкий и с мясом внутри. Держим до сметаны.',emoji:'🥟',hue:40,ageMin:190,trades:46,size:1.8},
+    {name:'Void Frog',ticker:'VFROG',desc:'Лягушка смотрит в пустоту. Пустота квакает в ответ.',emoji:'🐸',hue:150,ageMin:75,trades:34,size:1.4},
+    {name:'Moon Cat',ticker:'MCAT',desc:'Кот уже на орбите, ждёт остальных.',emoji:'🐱',hue:260,ageMin:32,trades:22,size:1.1},
+    {name:'Sunday Tea',ticker:'TEA',desc:'Монета для тех, кто никуда не торопится.',emoji:'🍵',hue:90,ageMin:9,trades:12,size:0.7}
+  ];
+  specs.forEach(function(sp,i){
+    var created=now-sp.ageMin*60000;
+    var t=mkToken({name:sp.name,ticker:sp.ticker,desc:sp.desc,emoji:sp.emoji,hue:sp.hue,creator:bots[i].addr,t:created});
+    st.tokens.push(t);
+    applyBuy(t,bots[i].addr,0.5,created);
+    for(var j=0;j<sp.trades;j++){
+      var when=created+(now-created)*(j+1)/(sp.trades+1);
+      var b=pick(bots),held=t.holders[b.addr]||0;
+      if(held>1&&Math.random()<0.35)applySell(t,b.addr,held*rnd(0.3,1),when);
+      else applyBuy(t,b.addr,0.05+Math.pow(Math.random(),2)*sp.size,when);
+    }
+  });
+  return st;
+}
+
+/* ---------- ui helpers ---------- */
+function toast(msg,kind){
+  var el=document.createElement('div');el.className='toast'+(kind==='err'?' err':'');el.textContent=msg;
+  $('#toasts').appendChild(el);setTimeout(function(){el.remove();},2800);
+}
+function updateHeader(){
+  var chip=$('#walletChip');
+  if(state.me){chip.className='chip-wallet';chip.textContent=fmtSol(state.me.sol)+' SOL · '+state.me.name;}
+  else{chip.className='chip-wallet cta';chip.textContent='Создать кошелёк';}
+  $('#botsOn').checked=!!state.botsOn;
+}
+function setNav(){
+  var v=view==='coin'?'market':view;
+  document.querySelectorAll('[data-nav]').forEach(function(a){a.classList.toggle('on',a.dataset.nav===v);});
+}
+function latestTrades(n){
+  var all=[];
+  state.tokens.forEach(function(t){t.trades.slice(0,n).forEach(function(x){all.push({x:x,t:t});});});
+  all.sort(function(a,b){return b.x.t-a.x.t;});
+  return all.slice(0,n);
+}
+
+/* ---------- market ---------- */
+function renderStrip(){
+  var el=$('#strip');if(!el)return;
+  el.innerHTML=latestTrades(8).map(function(e){
+    return '<a class="chip '+e.x.type+'" href="#coin-'+e.t.id+'"><i></i><b>'+esc(nameOf(e.x.addr))+'</b> '+(e.x.type==='buy'?'купил':'продал')+' '+fmtSol(e.x.sol)+' SOL · $'+esc(e.t.ticker)+'</a>';
+  }).join('');
+}
+function cardHTML(t){
+  var ch=price(t)/t.price0-1,prog=Math.min(100,t.realSol/GRAD_SOL*100),n=Object.keys(t.holders).length;
+  return '<a class="card" href="#coin-'+t.id+'"><div class="av" style="--h:'+t.hue+'">'+t.emoji+'</div><div class="cbody">'+
+    '<div class="ctop"><b>'+esc(t.name)+'</b><span class="tick">$'+esc(t.ticker)+'</span>'+(t.graduated?'<span class="badge ok">на DEX</span>':'')+'</div>'+
+    '<div class="muted small clamp">'+esc(t.desc||'')+'</div>'+
+    '<div class="cmeta"><span>Кап. <b>$'+fmtUsd(mcSol(t)*USD)+'</b></span><span class="'+(ch>=0?'up':'down')+'">'+pct(ch)+'</span></div>'+
+    '<div class="bar"><i style="width:'+prog.toFixed(1)+'%"></i></div>'+
+    '<div class="cfoot small muted"><span>'+n+' холдеров</span><span>'+t.trades.length+' сделок</span><span>'+ago(t.createdAt)+'</span></div></div></a>';
+}
+function renderGrid(){
+  var el=$('#grid');if(!el)return;
+  var list=state.tokens.slice();
+  if(sortMode==='hot')list.sort(function(a,b){return (b.trades[0]?b.trades[0].t:0)-(a.trades[0]?a.trades[0].t:0);});
+  else if(sortMode==='new')list.sort(function(a,b){return b.createdAt-a.createdAt;});
+  else list.sort(function(a,b){return mcSol(b)-mcSol(a);});
+  el.innerHTML=list.map(cardHTML).join('');
+}
+function renderMarket(){
+  app.innerHTML='<section class="intro"><div><h1>Запускай монеты и смотри, кто их покупает</h1><p class="muted">Каждая покупка поднимает цену, каждая продажа снижает её. Создайте монету, и другие игроки смогут её купить.</p></div><a class="btn" href="#create">Создать монету</a></section>'+
+    '<div id="strip" class="strip" aria-label="Последние сделки"></div>'+
+    '<div class="tabs" id="sorts"><button data-s="hot">Горячие</button><button data-s="new">Новые</button><button data-s="cap">По капитализации</button></div>'+
+    '<div id="grid" class="grid"></div>';
+  var tabs=document.querySelectorAll('#sorts button');
+  function mark(){tabs.forEach(function(b){b.classList.toggle('on',b.dataset.s===sortMode);});}
+  tabs.forEach(function(b){b.addEventListener('click',function(){sortMode=b.dataset.s;mark();renderGrid();});});
+  mark();renderStrip();renderGrid();
+}
+
+/* ---------- coin page ---------- */
+function chartSVG(t){
+  var pts=[t.price0].concat(t.trades.slice(0,150).reverse().map(function(x){return x.price;}));
+  var W=600,H=220,pad=14;
+  var min=Math.min.apply(null,pts),max=Math.max.apply(null,pts);
+  var rmin=min,rmax=max;
+  if(max===min){max=min*1.02;min=min*0.98;}
+  var p2=(max-min)*0.12;min-=p2;max+=p2;if(min<0)min=0;
+  function x(i){return pad+(W-2*pad)*(pts.length===1?1:i/(pts.length-1));}
+  function y(v){return pad+(H-2*pad)*(1-(v-min)/(max-min));}
+  var d='';pts.forEach(function(v,i){d+=(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1);});
+  var area=d+'L'+x(pts.length-1).toFixed(1)+' '+(H-pad)+'L'+x(0).toFixed(1)+' '+(H-pad)+'Z';
+  var up=pts[pts.length-1]>=pts[0];
+  var grid=[0.25,0.5,0.75].map(function(f){var yy=(pad+(H-2*pad)*f).toFixed(1);return '<line x1="0" x2="'+W+'" y1="'+yy+'" y2="'+yy+'"></line>';}).join('');
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" class="'+(up?'up':'down')+'" role="img" aria-label="График цены"><g class="grid">'+grid+'</g><path class="area" d="'+area+'"></path><path class="line" d="'+d+'"></path><circle class="dot" r="4" cx="'+x(pts.length-1).toFixed(1)+'" cy="'+y(pts[pts.length-1]).toFixed(1)+'"></circle></svg>';
+  return svg+'<div class="chart-note small muted">Максимум '+fmtPrice(rmax)+' · минимум '+fmtPrice(rmin)+' SOL · последние '+(pts.length-1)+' сделок</div>';
+}
+function renderCoin(){
+  var t=tok();if(!t){location.hash='market';return;}
+  lastT=t.trades[0]?t.trades[0].t:0;lastGrad=t.graduated;mode='buy';
+  app.innerHTML='<a class="back" href="#market">← Рынок</a>'+
+    '<div class="coin-head"><div class="av lg" style="--h:'+t.hue+'">'+t.emoji+'</div><div><h1>'+esc(t.name)+' <span class="tick">$'+esc(t.ticker)+'</span></h1><div class="muted small">Создал '+whoHtml(t.creator,null)+' · <span id="age"></span></div></div></div>'+
+    '<p class="desc">'+esc(t.desc||'Без описания')+'</p>'+
+    '<div class="coin-grid">'+
+    '<div class="panel a-main"><div id="stats" class="stats"></div><div id="chart" class="chart"></div></div>'+
+    '<div class="panel a-trade" id="tradePanel"></div>'+
+    '<div class="panel a-curve"><div class="ph"><h2>Бондинг-кривая</h2></div><div id="curve"></div></div>'+
+    '<div class="panel a-trades"><div class="ph"><h2>Кто покупал и продавал</h2><span class="muted small" id="tcount"></span></div><div class="scroll"><table class="tbl"><thead><tr><th>Кошелёк</th><th>Тип</th><th class="num">SOL</th><th class="num">Монеты</th><th class="num">Назад</th></tr></thead><tbody id="trades"></tbody></table></div></div>'+
+    '<div class="panel a-holders"><div class="ph"><h2>Холдеры</h2></div><div id="holders" class="hold"></div></div>'+
+    '</div>';
+  renderTradePanel();updateCoin(true);
+}
+function updateCoin(initial){
+  var t=tok();if(!t||view!=='coin')return;
+  var ch=price(t)/t.price0-1,vol=0;t.trades.forEach(function(x){vol+=x.sol;});
+  $('#age').textContent='создана '+ago(t.createdAt)+' назад';
+  $('#stats').innerHTML=
+    '<div><div class="k">Цена, SOL</div><div class="v">'+fmtPrice(price(t))+'</div></div>'+
+    '<div><div class="k">Капитализация</div><div class="v">$'+fmtUsd(mcSol(t)*USD)+'</div></div>'+
+    '<div><div class="k">С момента запуска</div><div class="v '+(ch>=0?'up':'down')+'">'+pct(ch)+'</div></div>'+
+    '<div><div class="k">Объём, SOL</div><div class="v">'+fmtSol(vol)+'</div></div>'+
+    '<div><div class="k">Холдеры</div><div class="v">'+Object.keys(t.holders).length+'</div></div>';
+  $('#chart').innerHTML=chartSVG(t);
+  var prog=Math.min(100,t.realSol/GRAD_SOL*100);
+  $('#curve').innerHTML='<div class="bar"><i style="width:'+prog.toFixed(1)+'%"></i></div>'+
+    '<p class="small muted" style="margin-top:8px">'+(t.graduated?'Порог достигнут: монета выпущена на биржу, торговля по кривой закрыта.':'В кривой '+fmtSol(t.realSol)+' из '+GRAD_SOL+' SOL ('+prog.toFixed(1)+'%). Осталось продать '+fmtTok(t.realTok)+' монет, и она уйдёт на биржу. Комиссия '+(FEE*100)+'%.')+'</p>';
+  $('#tcount').textContent=t.trades.length+' сделок';
+  $('#trades').innerHTML=t.trades.slice(0,40).map(function(x){
+    var fresh=!initial&&x.t>lastT;
+    return '<tr class="'+(fresh?'fresh':'')+'"><td>'+whoHtml(x.addr,t.creator)+'</td><td class="'+(x.type==='buy'?'up':'down')+'">'+(x.type==='buy'?'Покупка':'Продажа')+'</td><td class="num">'+fmtSol(x.sol)+'</td><td class="num">'+fmtTok(x.tok)+'</td><td class="num muted">'+ago(x.t)+'</td></tr>';
+  }).join('')||'<tr><td colspan="5" class="muted">Сделок пока нет. Станьте первым покупателем.</td></tr>';
+  if(t.trades[0])lastT=t.trades[0].t;
+  var rows=Object.keys(t.holders).map(function(a){return [a,t.holders[a]];}).sort(function(a,b){return b[1]-a[1];}).slice(0,12);
+  var h='<div class="hrow"><span class="muted">·</span><span>Бондинг-кривая</span><span>'+(t.realTok/SUPPLY*100).toFixed(2)+'%</span><div class="hb"><i style="width:'+Math.min(100,t.realTok/SUPPLY*100*1.2)+'%"></i></div></div>';
+  rows.forEach(function(r,i){
+    var p=r[1]/SUPPLY*100;
+    h+='<div class="hrow"><span class="muted">'+(i+1)+'</span><span style="min-width:0;overflow-wrap:anywhere">'+whoHtml(r[0],t.creator)+'</span><span>'+p.toFixed(2)+'%</span><div class="hb"><i style="width:'+Math.min(100,p*6)+'%"></i></div></div>';
+  });
+  $('#holders').innerHTML=h;
+  if(t.graduated!==lastGrad){lastGrad=t.graduated;renderTradePanel();}
+  updateDyn();
+}
+function renderTradePanel(){
+  var t=tok(),el=$('#tradePanel');if(!el)return;
+  if(!state.me){
+    el.innerHTML='<h2>Торговля</h2><p class="muted" style="margin:8px 0 14px">Чтобы покупать и продавать, создайте виртуальный кошелёк. Он бесплатный, на счёт сразу придут 10 SOL.</p><a class="btn block" href="#wallet">Создать кошелёк</a>';return;
+  }
+  if(t.graduated){el.innerHTML='<h2>Торговля закрыта</h2><p class="muted" style="margin-top:8px">Эта монета набрала '+GRAD_SOL+' SOL и выпущена на биржу. Покупки и продажи по кривой больше недоступны.</p>';return;}
+  el.innerHTML='<div class="seg"><button id="mBuy" class="buy on">Купить</button><button id="mSell" class="sell">Продать</button></div>'+
+    '<div class="small muted" id="bal"></div>'+
+    '<label class="lbl" id="amtLbl" for="amt">Сумма в SOL</label>'+
+    '<input id="amt" type="number" inputmode="decimal" min="0" step="any" placeholder="0.0">'+
+    '<div class="quick" id="quick"></div><div class="preview small" id="preview"></div>'+
+    '<button class="btn block" id="go">Купить</button>';
+  $('#mBuy').addEventListener('click',function(){setMode('buy');});
+  $('#mSell').addEventListener('click',function(){setMode('sell');});
+  $('#amt').addEventListener('input',updatePreview);
+  $('#go').addEventListener('click',doTrade);
+  setMode(mode);
+}
+function setMode(m){
+  mode=m;var t=tok();
+  $('#mBuy').classList.toggle('on',m==='buy');$('#mSell').classList.toggle('on',m==='sell');
+  $('#amtLbl').textContent=m==='buy'?'Сумма в SOL':'Количество монет $'+t.ticker;
+  var go=$('#go');go.textContent=m==='buy'?'Купить $'+t.ticker:'Продать $'+t.ticker;go.className='btn block'+(m==='sell'?' sell':'');
+  var q=$('#quick');q.innerHTML='';
+  var opts=m==='buy'?[['0.1',0.1],['0.5',0.5],['1',1],['5',5]]:[['25%',0.25],['50%',0.5],['75%',0.75],['100%',1]];
+  opts.forEach(function(o){
+    var b=document.createElement('button');b.type='button';b.textContent=o[0];
+    b.addEventListener('click',function(){
+      if(mode==='buy')$('#amt').value=String(o[1]);
+      else{var h=t.holders[state.me.addr]||0;$('#amt').value=o[1]===1?String(h):String(Math.floor(h*o[1]*1e3)/1e3);}
+      updatePreview();
+    });q.appendChild(b);
+  });
+  $('#amt').value='';updatePreview();updateDyn();
+}
+function updateDyn(){
+  var t=tok(),b=$('#bal');if(!b||!state.me)return;
+  var h=t.holders[state.me.addr]||0;
+  b.innerHTML='Баланс: <b>'+fmtSol(state.me.sol)+' SOL</b> · у вас '+fmtTok(h)+' $'+esc(t.ticker);
+}
+function updatePreview(){
+  var t=tok(),pv=$('#preview');if(!pv)return;
+  var v=parseFloat($('#amt').value);
+  if(!(v>0)){pv.innerHTML='<span class="muted">Введите сумму, чтобы увидеть расчёт.</span>';return;}
+  var p0=price(t),c,html;
+  if(mode==='buy'){
+    c=calcBuy(t,v);
+    html='<div><span class="muted">Получите</span><b>≈ '+fmtTok(c.out)+' $'+esc(t.ticker)+'</b></div><div><span class="muted">Комиссия</span><span>'+fmtSol(c.fee)+' SOL</span></div>';
+  }else{
+    c=calcSell(t,v);
+    html='<div><span class="muted">Получите</span><b>≈ '+fmtSol(c.out)+' SOL</b></div><div><span class="muted">Комиссия</span><span>'+fmtSol(c.fee)+' SOL</span></div>';
+  }
+  var imp=(c.nvS/c.nvT)/p0-1;
+  pv.innerHTML=html+'<div><span class="muted">Цена после сделки</span><span class="'+(imp>=0?'up':'down')+'">'+pct(imp)+'</span></div>';
+}
+function doTrade(){if(MP.on)return mpTrade();
+  var t=tok(),v=parseFloat($('#amt').value);
+  if(!(v>0)){toast('Введите сумму','err');return;}
+  if(mode==='buy'){
+    if(v>state.me.sol+1e-9){toast('Недостаточно SOL на балансе','err');return;}
+    var c=applyBuy(t,state.me.addr,v);
+    state.me.sol-=c.spent;
+    toast('Куплено '+fmtTok(c.out)+' '+t.ticker+' за '+fmtSol(c.spent)+' SOL');
+  }else{
+    var h=t.holders[state.me.addr]||0;
+    if(v>h*(1+1e-9)){toast('У вас нет столько монет','err');return;}
+    var s=applySell(t,state.me.addr,Math.min(v,h));
+    state.me.sol+=s.out;
+    toast('Продано '+fmtTok(Math.min(v,h))+' '+t.ticker+' за '+fmtSol(s.out)+' SOL');
+  }
+  $('#amt').value='';
+  afterChange(t);updatePreview();
+}
+
+/* ---------- create ---------- */
+function renderCreate(){
+  var sel={emoji:EMOJIS[0],hue:HUES[0]};
+  var gate=state.me?'':'<div class="notice" style="margin-bottom:14px">Сначала нужен кошелёк: он будет указан как создатель монеты. <a href="#wallet"><b>Создать кошелёк</b></a></div>';
+  app.innerHTML='<h1 style="margin-bottom:14px">Создать монету</h1>'+gate+
+    '<div class="panel form">'+
+    '<label class="lbl" for="cName">Название</label><input id="cName" type="text" maxlength="32" placeholder="Например, Пельмень Коин">'+
+    '<label class="lbl" for="cTick">Тикер</label><input id="cTick" type="text" maxlength="10" placeholder="PEL">'+
+    '<label class="lbl" for="cDesc">Описание</label><textarea id="cDesc" maxlength="200" placeholder="Расскажите, о чём ваша монета"></textarea>'+
+    '<div class="lbl">Картинка</div><div class="pick" id="pickE"></div>'+
+    '<div class="lbl">Цвет</div><div class="pick hues" id="pickH"></div>'+
+    '<label class="lbl" for="cBuy">Первая покупка, SOL (необязательно)</label><input id="cBuy" type="number" inputmode="decimal" min="0" step="any" placeholder="0">'+
+    '<p class="small muted" style="margin:6px 0 14px">Запуск бесплатный. Первая покупка даёт вам стартовую долю по самой низкой цене.</p>'+
+    '<button class="btn" id="cGo">Запустить монету</button></div>';
+  var pe=$('#pickE'),ph=$('#pickH');
+  function draw(){
+    pe.innerHTML='';ph.innerHTML='';
+    EMOJIS.forEach(function(e){var b=document.createElement('button');b.type='button';b.textContent=e;b.className=sel.emoji===e?'on':'';b.setAttribute('aria-label','Картинка '+e);b.addEventListener('click',function(){sel.emoji=e;draw();});pe.appendChild(b);});
+    HUES.forEach(function(h){var b=document.createElement('button');b.type='button';b.style.setProperty('--h',h);b.className=sel.hue===h?'on':'';b.setAttribute('aria-label','Цвет '+h);b.addEventListener('click',function(){sel.hue=h;draw();});ph.appendChild(b);});
+  }
+  draw();
+  $('#cTick').addEventListener('input',function(e){e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'');});
+  $('#cGo').addEventListener('click',function(){
+    if(!state.me){toast('Сначала создайте кошелёк','err');return;}
+    var name=$('#cName').value.trim(),tick=$('#cTick').value.trim(),desc=$('#cDesc').value.trim(),buy=parseFloat($('#cBuy').value)||0;
+    if(name.length<2){toast('Название: минимум 2 символа','err');return;}
+    if(tick.length<2){toast('Тикер: минимум 2 символа','err');return;}
+    if(buy<0||buy>state.me.sol+1e-9){toast('Первая покупка больше вашего баланса','err');return;}
+    if(MP.on){mpCreate(name,tick,desc,sel.emoji,sel.hue,buy);return;}
+    var t=mkToken({name:name,ticker:tick,desc:desc,emoji:sel.emoji,hue:sel.hue,creator:state.me.addr,t:Date.now()});
+    state.tokens.unshift(t);
+    if(buy>0){var c=applyBuy(t,state.me.addr,buy);state.me.sol-=c.spent;}
+    save();updateHeader();toast('Монета $'+tick+' запущена');
+    location.hash='coin-'+t.id;
+  });
+}
+
+/* ---------- wallet ---------- */
+function renderWallet(){
+  if(!state.me){
+    app.innerHTML='<h1 style="margin-bottom:14px">Кошелёк</h1><div class="panel form"><p class="muted" style="margin-bottom:8px">Создайте виртуальный кошелёк. Мы сгенерируем адрес и начислим 10 SOL для тестов.</p>'+
+      '<label class="lbl" for="wName">Ник</label><input id="wName" type="text" maxlength="16" placeholder="anon">'+
+      '<div style="margin-top:12px"><button class="btn" id="wGo">Создать кошелёк</button></div></div>';
+    $('#wGo').addEventListener('click',function(){
+      var n=$('#wName').value.trim()||'anon';
+      if(MP.on){mpJoin(n);return;}
+      state.me={addr:genAddr(),name:n,sol:10,createdAt:Date.now()};
+      save();updateHeader();toast('Кошелёк создан, начислено 10 SOL');renderWallet();
+    });
+    return;
+  }
+  var me=state.me,port=[],mine=[],hist=[],total=me.sol;
+  state.tokens.forEach(function(t){
+    var h=t.holders[me.addr]||0;
+    if(h>0){var val=t.graduated?h*price(t):calcSell(t,h).out;total+=val;port.push({t:t,h:h,val:val});}
+    if(t.creator===me.addr){
+      var buyers={};t.trades.forEach(function(x){if(x.type==='buy'&&x.addr!==me.addr)buyers[x.addr]=1;});
+      mine.push({t:t,buyers:Object.keys(buyers).length});
+    }
+    t.trades.forEach(function(x){if(x.addr===me.addr)hist.push({x:x,t:t});});
+  });
+  hist.sort(function(a,b){return b.x.t-a.x.t;});
+  var portHtml=port.length?'<div class="scroll"><table class="tbl"><thead><tr><th>Монета</th><th class="num">Количество</th><th class="num">Стоимость, SOL</th><th></th></tr></thead><tbody>'+
+    port.map(function(p){return '<tr><td>'+p.t.emoji+' '+esc(p.t.name)+' <span class="muted">$'+esc(p.t.ticker)+'</span></td><td class="num">'+fmtTok(p.h)+'</td><td class="num">'+fmtSol(p.val)+'</td><td class="num"><a class="up" href="#coin-'+p.t.id+'">Открыть</a></td></tr>';}).join('')+'</tbody></table></div>':'<p class="muted">Пока нет монет. Купите что-нибудь на рынке.</p>';
+  var mineHtml=mine.length?'<div class="scroll"><table class="tbl"><thead><tr><th>Монета</th><th class="num">Покупателей</th><th class="num">В кривой, SOL</th><th></th></tr></thead><tbody>'+
+    mine.map(function(p){return '<tr><td>'+p.t.emoji+' '+esc(p.t.name)+' <span class="muted">$'+esc(p.t.ticker)+'</span></td><td class="num">'+p.buyers+'</td><td class="num">'+fmtSol(p.t.realSol)+'</td><td class="num"><a class="up" href="#coin-'+p.t.id+'">Смотреть</a></td></tr>';}).join('')+'</tbody></table></div>':'<p class="muted">Вы ещё не создавали монет. <a class="up" href="#create">Создать первую</a></p>';
+  var histHtml=hist.length?'<div class="scroll"><table class="tbl"><thead><tr><th>Монета</th><th>Тип</th><th class="num">SOL</th><th class="num">Назад</th></tr></thead><tbody>'+
+    hist.slice(0,15).map(function(e){return '<tr><td>$'+esc(e.t.ticker)+'</td><td class="'+(e.x.type==='buy'?'up':'down')+'">'+(e.x.type==='buy'?'Покупка':'Продажа')+'</td><td class="num">'+fmtSol(e.x.sol)+'</td><td class="num muted">'+ago(e.x.t)+'</td></tr>';}).join('')+'</tbody></table></div>':'<p class="muted">Сделок пока нет.</p>';
+  app.innerHTML='<h1 style="margin-bottom:14px">Кошелёк</h1><div class="cards">'+
+    '<div class="row2"><div class="panel walletcard"><div class="muted small">Баланс</div><div class="bignum">'+fmtSol(me.sol)+' SOL</div><div class="small muted">Всего с монетами: '+fmtSol(total)+' SOL (≈ $'+fmtUsd(total*USD)+')</div>'+
+    '<div class="addr"><span class="small muted">'+esc(me.name)+'</span><code>'+me.addr+'</code><button class="btn ghost" id="wCopy">Копировать</button></div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px"><button class="btn" id="wFaucet">Получить 10 SOL</button><button class="btn ghost" id="wReset">Сбросить всё</button></div></div>'+
+    '<div class="panel"><div class="ph"><h2>Мои монеты и покупатели</h2></div>'+mineHtml+'</div></div>'+
+    '<div class="panel"><div class="ph"><h2>Портфель</h2></div>'+portHtml+'</div>'+
+    '<div class="panel"><div class="ph"><h2>Мои сделки</h2></div>'+histHtml+'</div></div>';
+  if(MP.on)mpSendPanel();
+  $('#wFaucet').addEventListener('click',function(){me.sol+=10;save();updateHeader();toast('Начислено 10 SOL');renderWallet();});
+  $('#wCopy').addEventListener('click',function(){
+    var ok=function(){toast('Адрес скопирован');},fail=function(){toast('Не удалось скопировать, выделите адрес вручную','err');};
+    try{navigator.clipboard.writeText(me.addr).then(ok,fail);}catch(e){fail();}
+  });
+  var rb=$('#wReset'),armed=false;
+  rb.addEventListener('click',function(){
+    if(!armed){armed=true;rb.textContent='Точно сбросить?';setTimeout(function(){armed=false;if(rb)rb.textContent='Сбросить всё';},3500);return;}
+    try{localStorage.removeItem(KEY);}catch(e){}
+    state=seed();save();updateHeader();toast('Данные сброшены');
+    if(location.hash==='#market')route();else location.hash='market';
+  });
+}
+
+/* ---------- live market ---------- */
+function afterChange(t){
+  save();updateHeader();
+  if(view==='market'){renderGrid();renderStrip();}
+  else if(view==='coin'&&t.id===currentCoinId){updateCoin();}
+  else if(view==='wallet'&&state.me&&!document.activeElement.matches('input')){renderWallet();}
+}
+function botTrade(){
+  var live=state.tokens.filter(function(t){return !t.graduated;});
+  if(!live.length)return;
+  var now=Date.now(),w=live.map(function(t){return 1+(now-t.createdAt<600000?4:0)+(t.id===currentCoinId?3:0);});
+  var sum=w.reduce(function(a,b){return a+b;},0),r=Math.random()*sum,i=0;
+  while(i<w.length-1&&r>w[i]){r-=w[i];i++;}
+  var t=live[i],bot=pick(state.bots),held=t.holders[bot.addr]||0;
+  if(held>1&&Math.random()<0.38)applySell(t,bot.addr,held*rnd(0.25,1));
+  else applyBuy(t,bot.addr,0.04+Math.pow(Math.random(),2)*1.6);
+  afterChange(t);
+}
+function loop(){
+  setTimeout(function(){if(state.botsOn&&!document.hidden)botTrade();loop();},rnd(1300,3200));
+}
+
+
+/* ---------- multiplayer: каждый игрок пишет только свой журнал действий, состояние рынка пересчитывается у всех одинаково ---------- */
+var MP={on:false,db:null,id:null,name:null,mine:[],docs:{},users:{},loaded:false,q:Promise.resolve()};
+function mpRebuild(){
+  var all=[],us={},toks=[],by={};
+  Object.keys(MP.docs).forEach(function(u){var d=MP.docs[u];us[u]={name:String(d.name||'anon').slice(0,16),sol:10};(d.ops||[]).forEach(function(o,i){all.push({u:u,o:o,i:i});});});
+  all.sort(function(a,b){return (a.o.t-b.o.t)||(a.u<b.u?-1:a.u>b.u?1:0)||(a.i-b.i);});
+  all.forEach(function(e){
+    var o=e.o,u=us[e.u],t=by[o.c],sol=+o.sol||0,tk=+o.tok||0,c;
+    if(o.k==='coin'){
+      if(by[o.id]||!o.id)return;
+      var n=mkToken({name:String(o.name||'?').slice(0,32),ticker:String(o.ticker||'?').slice(0,10),desc:String(o.desc||'').slice(0,200),emoji:EMOJIS.indexOf(o.emoji)<0?EMOJIS[0]:o.emoji,hue:+o.hue||150,creator:e.u,t:o.t});
+      n.id=String(o.id).slice(0,12);by[n.id]=n;toks.push(n);
+      if(sol>0&&u.sol>=sol-1e-9){c=applyBuy(n,e.u,sol,o.t);u.sol-=c.spent;}
+    }else if(o.k==='buy'){
+      if(t&&!t.graduated&&sol>0&&u.sol>=sol-1e-9){c=applyBuy(t,e.u,sol,o.t);u.sol-=c.spent;}
+    }else if(o.k==='sell'){
+      var h=t?(t.holders[e.u]||0):0;
+      if(t&&!t.graduated&&tk>0&&tk<=h*(1+1e-9)){c=applySell(t,e.u,Math.min(tk,h),o.t);u.sol+=c.out;}
+    }else if(o.k==='send'){
+      var r=us[o.to];
+      if(r&&o.to!==e.u&&sol>0&&u.sol>=sol-1e-9){u.sol-=sol;r.sol+=sol;}
+    }
+  });
+  toks.reverse();state.tokens=toks;MP.users=us;
+  state.me=(MP.id&&MP.name!==null&&us[MP.id])?{addr:MP.id,name:us[MP.id].name,sol:us[MP.id].sol}:null;
+}
+function mpRefresh(){
+  updateHeader();
+  if(view==='market'){renderGrid();renderStrip();}
+  else if(view==='coin'){if(tok())updateCoin();}
+  else if(view==='wallet'&&!(document.activeElement&&document.activeElement.matches('input,select')))renderWallet();
+}
+function mpPush(op){
+  op.t=Date.now();MP.mine.push(op);MP.docs[MP.id]={name:MP.name,ops:MP.mine};
+  mpRebuild();mpRefresh();
+  MP.q=MP.q.then(function(){return MP.db.doc('ops/'+MP.id).set({name:MP.name,ops:MP.mine.slice()});}).catch(function(){toast('Не удалось отправить действие в сеть','err');});
+}
+function mpJoin(n){MP.name=n;mpPush({k:'join'});toast('Аккаунт создан, начислено 10 SOL');renderWallet();}
+function mpCreate(name,tick,desc,emoji,hue,buy){
+  var id=Math.random().toString(36).slice(2,8);
+  mpPush({k:'coin',id:id,name:name,ticker:tick,desc:desc,emoji:emoji,hue:hue,sol:buy});
+  toast('Монета $'+tick+' запущена и видна всем игрокам');location.hash='coin-'+id;
+}
+function mpTrade(){
+  var t=tok(),v=parseFloat($('#amt').value);
+  if(!(v>0)){toast('Введите сумму','err');return;}
+  if(mode==='buy'){
+    if(v>state.me.sol+1e-9){toast('Недостаточно SOL на балансе','err');return;}
+    mpPush({k:'buy',c:t.id,sol:v});toast('Покупка отправлена');
+  }else{
+    var h=t.holders[state.me.addr]||0;
+    if(v>h*(1+1e-9)){toast('У вас нет столько монет','err');return;}
+    mpPush({k:'sell',c:t.id,tok:Math.min(v,h)});toast('Продажа отправлена');
+  }
+  $('#amt').value='';updatePreview();
+}
+function mpSendPanel(){
+  var f=$('#wFaucet'),r=$('#wReset');if(f)f.style.display='none';if(r)r.style.display='none';
+  var opts=Object.keys(MP.users).filter(function(u){return u!==MP.id;}).map(function(u){return '<option value="'+esc(u)+'">'+esc(MP.users[u].name)+' · '+esc(short(u))+'</option>';}).join('');
+  var d=document.createElement('div');d.className='panel form';
+  d.innerHTML='<div class="ph"><h2>Перевести SOL другому игроку</h2></div>'+(opts?'<label class="lbl" for="sTo">Кому</label><select id="sTo" style="width:100%;padding:10px;border-radius:10px;background:var(--surface2);border:1px solid var(--line)">'+opts+'</select><label class="lbl" for="sAmt">Сумма, SOL</label><input id="sAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="0.0"><div style="margin-top:12px"><button class="btn" id="sGo">Отправить</button></div>':'<p class="muted">Пока других игроков нет. Когда кто-то создаст аккаунт, он появится здесь.</p>');
+  app.querySelector('.cards').appendChild(d);
+  var go=$('#sGo');if(go)go.addEventListener('click',function(){
+    var a=parseFloat($('#sAmt').value),to=$('#sTo').value;
+    if(!(a>0)){toast('Введите сумму','err');return;}
+    if(a>state.me.sol+1e-9){toast('Недостаточно SOL','err');return;}
+    mpPush({k:'send',to:to,sol:a});toast('Отправлено '+fmtSol(a)+' SOL игроку '+nameOf(to));renderWallet();
+  });
+}
+function mpInit(){
+  if(!window.claude||!claude.use)return;
+  Promise.all([claude.use('db'),claude.use('user')]).then(function(r){
+    var db=r[0],user=r[1];if(!db||!user)return;
+    return user.id().then(function(id){
+      if(!id)return;
+      MP.db=db;MP.id=id;MP.on=true;state.bots=[];state.botsOn=false;
+      var lb=$('#botsOn');if(lb&&lb.closest('label'))lb.closest('label').style.display='none';
+      var first=true;
+      db.collection('ops').onSnapshot(function(snap){
+        var docs={};
+        snap.docs.forEach(function(d){
+          var x=d.data()||{};
+          if(d.id===MP.id){if(!MP.loaded){MP.mine=(x.ops||[]).slice();MP.name=x.name||null;}return;}
+          docs[d.id]=x;
+        });
+        MP.loaded=true;
+        if(MP.name!==null)docs[MP.id]={name:MP.name,ops:MP.mine};
+        MP.docs=docs;mpRebuild();
+        if(first){first=false;route();}else mpRefresh();
+      },function(){toast('Нет связи с общей базой','err');});
+    });
+  }).catch(function(){});
+}
+
+/* ---------- router ---------- */
+function route(){
+  var h=location.hash.slice(1);
+  if(h.indexOf('coin-')===0){view='coin';currentCoinId=h.slice(5);renderCoin();}
+  else if(h==='create'){view='create';renderCreate();}
+  else if(h==='wallet'){view='wallet';renderWallet();}
+  else{view='market';renderMarket();}
+  setNav();updateHeader();window.scrollTo(0,0);
+}
+state=load()||seed();
+$('#botsOn').addEventListener('change',function(e){state.botsOn=e.target.checked;save();toast(state.botsOn?'Боты снова торгуют':'Рынок на паузе');});
+window.addEventListener('hashchange',route);
+route();loop();mpInit();
+})();
+</script>
+
+</body></html>

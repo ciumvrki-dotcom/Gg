@@ -154,7 +154,7 @@ textarea{resize:vertical;min-height:80px}
       <a href="#create" data-nav="create">Создать монету</a>
       <a href="#wallet" data-nav="wallet">Кошелёк</a>
     </nav>
-    <label class="live"><input type="checkbox" id="botsOn" checked> Живой рынок</label>
+    <label class="live"><input type="checkbox" id="botsOn" checked> Живой рынок</label><span id="net" class="small muted"></span>
     <a id="walletChip" class="chip-wallet" href="#wallet"></a>
   </header>
   <div class="demo-note">Демо-режим: SOL, кошельки и покупатели виртуальные. Цена считается по бондинг-кривой, как на pump.fun.</div>
@@ -310,7 +310,7 @@ function renderStrip(){
 function cardHTML(t){
   var ch=price(t)/t.price0-1,prog=Math.min(100,t.realSol/GRAD_SOL*100),n=Object.keys(t.holders).length;
   return '<a class="card" href="#coin-'+t.id+'"><div class="av" style="--h:'+t.hue+'">'+t.emoji+'</div><div class="cbody">'+
-    '<div class="ctop"><b>'+esc(t.name)+'</b><span class="tick">$'+esc(t.ticker)+'</span>'+(t.graduated?'<span class="badge ok">на DEX</span>':'')+'</div>'+
+    '<div class="ctop"><b>'+esc(t.name)+'</b><span class="tick">$'+esc(t.ticker)+'</span>'+(t.graduated?'<span class="badge ok">на DEX</span>':'')+(t.rugged?'<span class="badge" style="background:var(--down);color:#fff">РАГПУЛ</span>':'')+'</div>'+
     '<div class="muted small clamp">'+esc(t.desc||'')+'</div>'+
     '<div class="cmeta"><span>Кап. <b>$'+fmtUsd(mcSol(t)*USD)+'</b></span><span class="'+(ch>=0?'up':'down')+'">'+pct(ch)+'</span></div>'+
     '<div class="bar"><i style="width:'+prog.toFixed(1)+'%"></i></div>'+
@@ -356,7 +356,7 @@ function renderCoin(){
   var t=tok();if(!t){location.hash='market';return;}
   lastT=t.trades[0]?t.trades[0].t:0;lastGrad=t.graduated;mode='buy';
   app.innerHTML='<a class="back" href="#market">← Рынок</a>'+
-    '<div class="coin-head"><div class="av lg" style="--h:'+t.hue+'">'+t.emoji+'</div><div><h1>'+esc(t.name)+' <span class="tick">$'+esc(t.ticker)+'</span></h1><div class="muted small">Создал '+whoHtml(t.creator,null)+' · <span id="age"></span></div></div></div>'+
+    '<div class="coin-head"><div class="av lg" style="--h:'+t.hue+'">'+t.emoji+'</div><div><h1>'+esc(t.name)+' <span class="tick">$'+esc(t.ticker)+'</span>'+(t.rugged?'<span class="badge" style="background:var(--down);color:#fff">РАГПУЛ</span>':'')+'</h1><div class="muted small">Создал '+whoHtml(t.creator,null)+' · <span id="age"></span></div></div></div>'+
     '<p class="desc">'+esc(t.desc||'Без описания')+'</p>'+
     '<div class="coin-grid">'+
     '<div class="panel a-main"><div id="stats" class="stats"></div><div id="chart" class="chart"></div></div>'+
@@ -546,7 +546,7 @@ function renderWallet(){
     '<div class="panel"><div class="ph"><h2>Мои монеты и покупатели</h2></div>'+mineHtml+'</div></div>'+
     '<div class="panel"><div class="ph"><h2>Портфель</h2></div>'+portHtml+'</div>'+
     '<div class="panel"><div class="ph"><h2>Мои сделки</h2></div>'+histHtml+'</div></div>';
-  if(MP.on)mpSendPanel();
+  sendPanel();
   $('#wFaucet').addEventListener('click',function(){me.sol+=10;save();updateHeader();toast('Начислено 10 SOL');renderWallet();});
   $('#wCopy').addEventListener('click',function(){
     var ok=function(){toast('Адрес скопирован');},fail=function(){toast('Не удалось скопировать, выделите адрес вручную','err');};
@@ -569,7 +569,7 @@ function afterChange(t){
   else if(view==='wallet'&&state.me&&!document.activeElement.matches('input')){renderWallet();}
 }
 function botTrade(){
-  var live=state.tokens.filter(function(t){return !t.graduated;});
+  var live=state.tokens.filter(function(t){return !t.graduated&&!t.rugged;});
   if(!live.length)return;
   var now=Date.now(),w=live.map(function(t){return 1+(now-t.createdAt<600000?4:0)+(t.id===currentCoinId?3:0);});
   var sum=w.reduce(function(a,b){return a+b;},0),r=Math.random()*sum,i=0;
@@ -579,8 +579,42 @@ function botTrade(){
   else applyBuy(t,bot.addr,0.04+Math.pow(Math.random(),2)*1.6);
   afterChange(t);
 }
+var BN=[['Doge Пельмень','DPEL'],['Мун Банан','MBAN'],['Rocket Кот','RKOT'],['Алмазные Лапки','ALAP'],['Хомяк Бум','HBUM'],['Dark Tea','DTEA'],['Инопланетянин','ALN'],['Сметана Коин','SMT'],['Gigachad','GIGA'],['Кабачок','KAB'],['Огонь Лис','FFOX'],['Сыр Мун','CHZ'],['Шаурма Ину','SHAW'],['Wen Lambo','LAMBO']];
+var BD=['Следующая сотка иксов. Не финансовый совет.','Команда доксится только в твиттере.','Ликвидность навсегда. Честно.','Просто держи и не смотри на график.','Сообщество решает всё.'];
+function botCreate(){
+  if(!state.bots.length||state.tokens.filter(function(t){return t.bot&&!t.graduated&&!t.rugged;}).length>=5)return;
+  var b=pick(state.bots),n=pick(BN),tk=n[1];
+  if(state.tokens.some(function(x){return x.ticker===tk;}))tk+=Math.floor(rnd(2,99));
+  var t=mkToken({name:n[0],ticker:tk,desc:pick(BD),emoji:pick(EMOJIS),hue:pick(HUES),creator:b.addr,t:Date.now()});
+  t.bot=true;t.rugAt=Math.random()<0.65?Date.now()+rnd(50000,200000):0;
+  state.tokens.unshift(t);applyBuy(t,b.addr,rnd(0.3,2));
+  toast('Новая монета $'+tk);afterChange(t);
+}
+function rugCheck(){
+  var now=Date.now(),changed=false;
+  for(var i=state.tokens.length-1;i>=0;i--){
+    var t=state.tokens[i];
+    if(t.rugged){
+      if(now>=t.removeAt){
+        state.tokens.splice(i,1);changed=true;
+        if(view==='coin'&&currentCoinId===t.id){toast('Монета $'+t.ticker+' удалена после рагпула','err');location.hash='market';}
+      }
+      continue;
+    }
+    if(t.rugAt&&now>=t.rugAt&&!t.graduated){
+      var h=t.holders[t.creator]||0;
+      if(h>0)applySell(t,t.creator,h);
+      t.rugged=true;t.removeAt=now+6000;t.rugAt=0;
+      toast('🚨 Рагпул: создатель слил $'+t.ticker,'err');afterChange(t);
+    }
+  }
+  if(changed){save();updateHeader();if(view==='market'){renderGrid();renderStrip();}else if(view==='wallet'&&state.me&&!document.activeElement.matches('input'))renderWallet();}
+}
 function loop(){
-  setTimeout(function(){if(state.botsOn&&!document.hidden)botTrade();loop();},rnd(1300,3200));
+  setTimeout(function(){
+    if(state.botsOn&&!document.hidden&&!MP.on){botTrade();if(Math.random()<0.1)botCreate();rugCheck();}
+    loop();
+  },rnd(1300,3200));
 }
 
 
@@ -640,29 +674,42 @@ function mpTrade(){
   }
   $('#amt').value='';updatePreview();
 }
-function mpSendPanel(){
-  var f=$('#wFaucet'),r=$('#wReset');if(f)f.style.display='none';if(r)r.style.display='none';
-  var opts=Object.keys(MP.users).filter(function(u){return u!==MP.id;}).map(function(u){return '<option value="'+esc(u)+'">'+esc(MP.users[u].name)+' · '+esc(short(u))+'</option>';}).join('');
+function sendPanel(){
+  if(MP.on){var f=$('#wFaucet'),r=$('#wReset');if(f)f.style.display='none';if(r)r.style.display='none';}
+  var list=MP.on?Object.keys(MP.users).filter(function(u){return u!==MP.id;}).map(function(u){return {addr:u,name:MP.users[u].name};}):state.bots.map(function(b){return {addr:b.addr,name:b.name};});
+  var dl=list.map(function(p){return '<option value="'+esc(p.name)+'">'+esc(short(p.addr))+'</option>';}).join('');
   var d=document.createElement('div');d.className='panel form';
-  d.innerHTML='<div class="ph"><h2>Перевести SOL другому игроку</h2></div>'+(opts?'<label class="lbl" for="sTo">Кому</label><select id="sTo" style="width:100%;padding:10px;border-radius:10px;background:var(--surface2);border:1px solid var(--line)">'+opts+'</select><label class="lbl" for="sAmt">Сумма, SOL</label><input id="sAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="0.0"><div style="margin-top:12px"><button class="btn" id="sGo">Отправить</button></div>':'<p class="muted">Пока других игроков нет. Когда кто-то создаст аккаунт, он появится здесь.</p>');
+  d.innerHTML='<div class="ph"><h2>Перевести SOL</h2></div>'+
+    '<label class="lbl" for="sTo">Кому: ник или адрес кошелька</label><input id="sTo" type="text" list="sList" autocomplete="off" placeholder="вставьте адрес или выберите ник"><datalist id="sList">'+dl+'</datalist>'+
+    '<label class="lbl" for="sAmt">Сумма, SOL</label><input id="sAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="0.0">'+
+    '<div style="margin-top:12px"><button class="btn" id="sGo">Отправить</button></div>'+
+    (MP.on?'':'<p class="small muted" style="margin-top:8px">Офлайн-режим: переводить можно только ботам. Чтобы слать SOL друзьям, откройте игру там, где виден статус «Онлайн».</p>');
   app.querySelector('.cards').appendChild(d);
-  var go=$('#sGo');if(go)go.addEventListener('click',function(){
-    var a=parseFloat($('#sAmt').value),to=$('#sTo').value;
+  $('#sGo').addEventListener('click',function(){
+    var q=$('#sTo').value.trim().toLowerCase(),a=parseFloat($('#sAmt').value),to=null;
+    if(!q){toast('Укажите получателя','err');return;}
+    list.forEach(function(p){if(p.addr.toLowerCase()===q||p.name.toLowerCase()===q||short(p.addr).toLowerCase()===q)to=p;});
+    if(!to){toast('Получатель не найден','err');return;}
     if(!(a>0)){toast('Введите сумму','err');return;}
     if(a>state.me.sol+1e-9){toast('Недостаточно SOL','err');return;}
-    mpPush({k:'send',to:to,sol:a});toast('Отправлено '+fmtSol(a)+' SOL игроку '+nameOf(to));renderWallet();
+    if(MP.on)mpPush({k:'send',to:to.addr,sol:a});
+    else{state.me.sol-=a;save();updateHeader();}
+    toast('Отправлено '+fmtSol(a)+' SOL → '+to.name);renderWallet();
   });
 }
-function mpInit(){
-  if(!window.claude||!claude.use)return;
+function setNet(on){var e=$('#net');if(e)e.textContent=on?'🌐 Онлайн: игроки видят друг друга':'💾 Офлайн: другие игроки не видны';}
+function mpInit(tries){
+  tries=tries||0;
+  function retry(){setNet(false);if(tries<8)setTimeout(function(){if(!MP.on)mpInit(tries+1);},1500);}
+  if(!window.claude||!claude.use){retry();return;}
   Promise.all([claude.use('db'),claude.use('user')]).then(function(r){
-    var db=r[0],user=r[1];if(!db||!user)return;
+    var db=r[0],user=r[1];if(!db||!user){retry();return;}
     return user.id().then(function(id){
-      if(!id)return;
-      MP.db=db;MP.id=id;MP.on=true;state.bots=[];state.botsOn=false;
+      if(!id){retry();return;}
+      MP.db=db;MP.id=id;MP.on=true;state.bots=[];state.botsOn=false;setNet(true);
       var lb=$('#botsOn');if(lb&&lb.closest('label'))lb.closest('label').style.display='none';
       var first=true;
-      db.collection('ops').onSnapshot(function(snap){
+      function onSnap(snap){
         var docs={};
         snap.docs.forEach(function(d){
           var x=d.data()||{};
@@ -673,9 +720,14 @@ function mpInit(){
         if(MP.name!==null)docs[MP.id]={name:MP.name,ops:MP.mine};
         MP.docs=docs;mpRebuild();
         if(first){first=false;route();}else mpRefresh();
-      },function(){toast('Нет связи с общей базой','err');});
+      }
+      db.collection('ops').onSnapshot(onSnap,function(){toast('Нет связи с общей базой','err');});
+      document.addEventListener('visibilitychange',function(){
+        if(document.hidden)return;
+        try{var q=db.collection('ops');if(q.get)q.get().then(onSnap).catch(function(){});}catch(e){}
+      });
     });
-  }).catch(function(){});
+  }).catch(retry);
 }
 
 /* ---------- router ---------- */
@@ -690,7 +742,7 @@ function route(){
 state=load()||seed();
 $('#botsOn').addEventListener('change',function(e){state.botsOn=e.target.checked;save();toast(state.botsOn?'Боты снова торгуют':'Рынок на паузе');});
 window.addEventListener('hashchange',route);
-route();loop();mpInit();
+route();loop();setNet(false);mpInit();
 })();
 </script>
 
